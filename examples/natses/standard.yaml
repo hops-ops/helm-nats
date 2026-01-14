@@ -1,0 +1,34 @@
+apiVersion: helm.hops.ops.com.ai/v1alpha1
+kind: NATS
+metadata:
+  name: nats
+  namespace: default
+spec:
+  clusterName: production-cluster
+  namespace: nats
+  labels:
+    team: platform
+    environment: production
+  providerConfigRef:
+    name: production-cluster
+    kind: ProviderConfig
+  values:
+    config:
+      cluster:
+        replicas: 3
+      jetstream:
+        enabled: true
+        fileStore:
+          pvc:
+            size: 50Gi
+            storageClassName: gp3
+    # Resource limits for production
+    container:
+      merge:
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi

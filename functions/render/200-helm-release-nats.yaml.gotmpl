@@ -1,0 +1,54 @@
+# code: language=yaml
+#
+# Helm release for NATS - high-speed cloud native messaging
+#
+# Defaults:
+# - Enables JetStream for persistence and streaming
+# - 3 replicas for high availability
+# - File-based storage for JetStream
+#
+
+{{- $n := $state.nats }}
+
+---
+apiVersion: helm.m.crossplane.io/v1beta1
+kind: Release
+metadata:
+  name: {{ $n.releaseName }}
+  annotations:
+    {{ setResourceNameAnnotation "helm-release-nats" }}
+  labels: {{ $n.labels | toJson }}
+spec:
+  managementPolicies: {{ $n.managementPolicies | toJson }}
+  forProvider:
+    chart:
+      name: nats
+      repository: https://nats-io.github.io/k8s/helm/charts/
+      version: 2.12.3
+    namespace: {{ $n.namespace }}
+    {{- if $n.overrideAllValues }}
+    values:
+      {{- toYaml $n.overrideAllValues | nindent 6 }}
+    {{- else }}
+    values:
+      fullnameOverride: nats
+      nameOverride: nats
+      # NATS cluster configuration
+      config:
+        cluster:
+          enabled: true
+          replicas: 3
+        # Enable JetStream for persistence and streaming
+        jetstream:
+          enabled: true
+          fileStore:
+            pvc:
+              size: 10Gi
+      {{- if $n.values }}
+      {{- toYaml $n.values | nindent 6 }}
+      {{- end }}
+    {{- end }}
+  rollbackLimit: 3
+  providerConfigRef:
+    name: {{ $n.providerConfigRef.name }}
+    kind: {{ $n.providerConfigRef.kind }}
